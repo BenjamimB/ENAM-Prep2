@@ -11,7 +11,7 @@ Ordem de busca:
 """
 
 import os
-import anthropic
+from openai import OpenAI
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
@@ -20,7 +20,8 @@ from ingest import CHROMA_DIR, EMBEDDING_MODEL
 TOP_K = 4          # chunks por coleção
 MAX_CONTEXT_CHARS = 12_000  # limite total de contexto enviado ao modelo
 
-CLAUDE_MODEL = "claude-opus-4-6"
+OLLAMA_MODEL = "qwen2.5:7b-instruct"
+OLLAMA_BASE_URL = "http://localhost:11434/v1"
 
 COLLECTION_ORDER = [
     ("constituicao",        "Constituição Federal"),
@@ -57,7 +58,7 @@ def _get_ef():
 
 class EnamAgent:
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        self.client = OpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
         self.chroma = _get_chroma_client()
         self.ef = _get_ef()
         self._collections: dict = {}
@@ -135,14 +136,16 @@ class EnamAgent:
             f"correta ({gabarito}) está correta."
         )
 
-        response = self.client.messages.create(
-            model=CLAUDE_MODEL,
+        response = self.client.chat.completions.create(
+            model=OLLAMA_MODEL,
             max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ],
         )
 
-        justificativa = response.content[0].text.strip()
+        justificativa = response.choices[0].message.content.strip()
         fontes_str = " | ".join(sources)
 
         return justificativa, fontes_str
