@@ -20,8 +20,8 @@ from ingest import CHROMA_DIR, EMBEDDING_MODEL
 TOP_K = 4          # chunks por coleção
 MAX_CONTEXT_CHARS = 12_000  # limite total de contexto enviado ao modelo
 
-OLLAMA_MODEL = "qwen2.5:7b-instruct"
-OLLAMA_BASE_URL = "http://localhost:11434/v1"
+MARITACA_MODEL = "sabiazinho-3"
+MARITACA_BASE_URL = "https://chat.maritaca.ai/api"
 
 COLLECTION_ORDER = [
     ("constituicao",        "Constituição Federal"),
@@ -58,7 +58,10 @@ def _get_ef():
 
 class EnamAgent:
     def __init__(self):
-        self.client = OpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+        api_key = os.environ.get("MARITACA_API_KEY")
+        if not api_key:
+            raise ValueError("Variável de ambiente MARITACA_API_KEY não definida.")
+        self.client = OpenAI(base_url=MARITACA_BASE_URL, api_key=api_key)
         self.chroma = _get_chroma_client()
         self.ef = _get_ef()
         self._collections: dict = {}
@@ -137,7 +140,7 @@ class EnamAgent:
         )
 
         response = self.client.chat.completions.create(
-            model=OLLAMA_MODEL,
+            model=MARITACA_MODEL,
             max_tokens=1024,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},

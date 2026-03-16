@@ -8,17 +8,21 @@ Salva o CSV a cada 10 questões processadas.
 import os
 import sys
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from ingest import run_ingestion
 from agent import EnamAgent
 from database import init_db, upsert_questao, get_processed_enunciados
 
 BASE_DIR = os.path.dirname(__file__)
-INPUT_CSV = os.path.join(BASE_DIR, "questoes extraidas - CONSTITUCIONAL.csv")
-OUTPUT_CSV = os.path.join(BASE_DIR, "questoes extraidas - CONSTITUCIONAL - justificadas.csv")
+INPUT_CSV = os.path.join(BASE_DIR, "questoes extraidas - CONSTITUCIONAL - maritaca.csv")
+OUTPUT_CSV = os.path.join(BASE_DIR, "questoes extraidas - CONSTITUCIONAL - maritaca - justificadas.csv")
 
 SAVE_EVERY = 10
-START_FROM = 111  # processa a partir da questão 111 (1-indexado)
+START_FROM = 1    # processa a partir da questão 1 (1-indexado)
+MAX_QUESTIONS = 0  # 0 = sem limite (processa todas)
 
 
 def load_csv() -> pd.DataFrame:
@@ -62,6 +66,8 @@ def main():
         i for i in df[~df["enunciado"].isin(already_done)].index.tolist()
         if i >= START_FROM - 1
     ]
+    if MAX_QUESTIONS > 0:
+        pending = pending[:MAX_QUESTIONS]
     print(f"  Já processadas: {len(already_done)}")
     print(f"  Pendentes:      {len(pending)}")
 
